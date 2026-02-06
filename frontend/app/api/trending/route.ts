@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { fetchLunarCrushPhysicsData } from '@/lib/lunarcrush';
 
 // Create Supabase client lazily
 function getSupabaseClient(): SupabaseClient | null {
@@ -76,6 +77,97 @@ Return ONLY the JSON array.`;
   return Array.isArray(parsed) ? parsed : parsed.narratives || parsed.stocks || [parsed];
 }
 
+async function getTrendingFromGemini() {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    return null;
+  }
+
+  const prompt = `Generate 4 current market-moving stock narratives for today focused on major equities.
+
+Return valid JSON ONLY with this structure:
+{
+  "narratives": [
+    {
+      "articleTitle": "headline",
+      "publicationName": "source",
+      "publicationCredibility": 85,
+      "publicationAuthorityRank": "A",
+      "ticker": "NVDA",
+      "companyName": "NVIDIA Corporation",
+      "sector": "Technology",
+      "storyCount": 5,
+      "auditVerdict": "STRUCTURALLY_SUPPORTED|MIXED_INCOMPLETE|NARRATIVE_TRAP",
+      "confidenceScore": 75,
+      "riskRating": "LOW|MODERATE|HIGH",
+      "manipulationRisk": "LOW|MODERATE|HIGH",
+      "summary": "2 sentence summary",
+      "primaryNarrative": "main thesis",
+      "narrativeType": "EARNINGS|AI_GROWTH|MACRO|SECTOR_ROTATION|MARKET_SENTIMENT"
+    }
+  ]
+}`;
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        generationConfig: {
+          temperature: 0.5,
+          responseMimeType: 'application/json',
+        },
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Gemini error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const content = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!content) {
+    return null;
+  }
+
+  const parsed = JSON.parse(content);
+  return Array.isArray(parsed) ? parsed : parsed.narratives || [];
+}
+
+async function enrichWithLunarCrush(data: any[]): Promise<any[]> {
+  const apiKey = process.env.LUNARCRUSH_API_KEY || process.env.NEXT_PUBLIC_LUNARCRUSH_API_KEY;
+  if (!apiKey || data.length === 0) {
+    return data;
+  }
+
+  const enriched = await Promise.all(
+    data.map(async (item) => {
+      const social = await fetchLunarCrushPhysicsData(item.ticker, apiKey);
+      if (!social) return item;
+
+      return {
+        ...item,
+        socialMomentum: {
+          score: Math.round(social.socialNpi),
+          trend: social.socialNpiTrend.toUpperCase(),
+          crowdBias: Math.round(social.sentiment),
+          expertBias: Math.round((social.galaxyScore - 50) * 1.5),
+        },
+        narrativeInsights: {
+          ...(item.narrativeInsights || {}),
+          volumeBehavior: `LunarCrush social volume 24h: ${social.socialVolume24h.toLocaleString()} with ${social.contributors.toLocaleString()} contributors.`,
+          narrativeConsistency: `Social trend is ${social.socialNpiTrend}; sentiment ${social.sentiment >= 0 ? '+' : ''}${social.sentiment}.`,
+        },
+      };
+    })
+  );
+
+  return enriched;
+}
+
 // Cache for trending data
 let trendingCache: { data: any[]; timestamp: number } | null = null;
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
@@ -109,14 +201,30 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Use OpenAI to generate trending data
-    const openaiData = await getTrendingFromOpenAI();
-    if (openaiData && openaiData.length > 0) {
-      const results = openaiData.slice(0, 4).map((item: any) => ({
+    // Use OpenAI first, then Gemini fallback
+    let generatedData: any[] | null = null;
+    try {
+      generatedData = await getTrendingFromOpenAI();
+    } catch (e) {
+      console.log('OpenAI trending generation failed, attempting Gemini');
+    }
+
+    if (!generatedData || generatedData.length === 0) {
+      try {
+        generatedData = await getTrendingFromGemini();
+      } catch (e) {
+        console.log('Gemini trending generation failed');
+      }
+    }
+
+    if (generatedData && generatedData.length > 0) {
+      const merged = generatedData.slice(0, 4).map((item: any) => ({
         ...getDefaultStructure(),
         ...item,
         timestamp: Date.now()
       }));
+
+      const results = await enrichWithLunarCrush(merged);
       trendingCache = { data: results, timestamp: Date.now() };
       return NextResponse.json(results);
     }
