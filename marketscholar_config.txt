@@ -1,0 +1,297 @@
+# ============================================================================
+# MARKETSCHOLAR CONFIGURATION FILE
+# Edit this file to customize sentiment scoring, keywords, and behavior
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# SENTIMENT SCORING GUIDE
+# Edit these descriptions to change how OpenAI scores articles
+# ----------------------------------------------------------------------------
+
+[sentiment_ranges]
+
+# VERY BULLISH (+70 to +100)
+very_bullish_min = 70
+very_bullish_max = 100
+very_bullish_criteria = """
+- Massive earnings beats (>20% above analyst estimates)
+- Major breakthrough product launches (iPhone-level events)
+- Significant guidance raises (>15% increase)
+- Multiple analyst upgrades to "Strong Buy" in same day
+- Transformative acquisitions or partnerships
+- Stock buyback announcements >$10B
+- New market expansion with huge TAM
+"""
+
+# BULLISH (+30 to +69)
+bullish_min = 30
+bullish_max = 69
+bullish_criteria = """
+- Solid earnings beats (5-20% above estimates)
+- Positive guidance raise (5-15%)
+- New major contracts or partnerships
+- Analyst price target increases (10%+ raise)
+- New product launches with strong pre-orders
+- Market share gains vs competitors
+- Analyst upgrades to "Buy"
+"""
+
+# SLIGHTLY BULLISH (+1 to +29)
+slightly_bullish_min = 1
+slightly_bullish_max = 29
+slightly_bullish_criteria = """
+- Meets expectations with positive commentary
+- Minor positive developments (small partnerships)
+- Maintained "Buy" ratings
+- Small price target increases (<10%)
+- Positive management commentary
+- Better-than-expected guidance on one metric
+"""
+
+# NEUTRAL (0)
+neutral_value = 0
+neutral_criteria = """
+- Meets expectations exactly, no surprises
+- Mixed results (some metrics beat, some miss)
+- General industry news without specific company impact
+- Maintained ratings with no change
+- Routine business updates
+"""
+
+# SLIGHTLY BEARISH (-1 to -29)
+slightly_bearish_min = -29
+slightly_bearish_max = -1
+slightly_bearish_criteria = """
+- Minor earnings misses (<5% below estimates)
+- Small concerns raised by analysts
+- Maintained "Hold" ratings
+- Minor guidance cuts (<5%)
+- Small competitive pressures
+- Supply chain concerns (minor)
+"""
+
+# BEARISH (-30 to -69)
+bearish_min = -69
+bearish_max = -30
+bearish_criteria = """
+- Clear earnings misses (5-20% below estimates)
+- Significant guidance cuts (5-15%)
+- Analyst downgrades to "Hold" or "Sell"
+- Price target cuts (10%+ reduction)
+- Major competitive threats announced
+- Customer losses or market share decline
+- Regulatory investigations announced
+"""
+
+# VERY BEARISH (-70 to -100)
+very_bearish_min = -100
+very_bearish_max = -70
+very_bearish_criteria = """
+- Massive earnings disasters (>20% miss)
+- Fraud, scandal, or accounting issues
+- Massive guidance cuts (>15%)
+- Multiple analyst downgrades to "Sell"
+- CEO resignation under pressure
+- Major product failures or recalls
+- Existential competitive threats
+- Bankruptcy concerns
+"""
+
+# ----------------------------------------------------------------------------
+# KEYWORDS AND SEARCH TERMS
+# Add/edit keywords to improve article discovery and relevance
+# ----------------------------------------------------------------------------
+
+[stock_keywords]
+
+# Format: TICKER = Company Name | keyword1, keyword2, keyword3
+
+NVDA = NVIDIA | NVIDIA, NVDA, Jensen Huang, GPU, AI chips, CUDA, GeForce, data center
+AAPL = Apple | Apple, AAPL, iPhone, Tim Cook, iOS, iPad, Mac, Apple Watch, Vision Pro
+MSFT = Microsoft | Microsoft, MSFT, Azure, Satya Nadella, Windows, Office 365, Teams, Xbox
+GOOGL = Alphabet | Google, Alphabet, GOOGL, Sundar Pichai, Android, Chrome, YouTube, Cloud
+META = Meta | Meta, Facebook, META, Mark Zuckerberg, Instagram, WhatsApp, VR, Quest
+TSLA = Tesla | Tesla, TSLA, Elon Musk, electric vehicle, EV, Model 3, Model Y, Cybertruck
+AMD = AMD | AMD, Lisa Su, Ryzen, EPYC, Radeon, processor, chip, EPYC
+INTC = Intel | Intel, INTC, Pat Gelsinger, semiconductor, chip, Xeon, Core processor
+AVGO = Broadcom | Broadcom, AVGO, Hock Tan, semiconductor, chip, networking
+QCOM = Qualcomm | Qualcomm, QCOM, Snapdragon, 5G, mobile chip, modem
+TXN = Texas Instruments | Texas Instruments, TXN, TI, analog chip, embedded
+
+# Add more tickers here:
+# AMZN = Amazon | Amazon, AMZN, Jeff Bezos, AWS, Prime, Alexa
+
+# ----------------------------------------------------------------------------
+# RELEVANCE FILTERING
+# Articles must pass these checks to be processed
+# ----------------------------------------------------------------------------
+
+[relevance_rules]
+
+# Must contain at least ONE of these financial keywords
+required_financial_keywords = stock, shares, earnings, revenue, profit, loss, market, investor, CEO, quarter, guidance, analyst, price target, upgrade, downgrade, beats, misses, outlook, forecast, valuation, P/E ratio
+
+# Automatically REJECT articles containing these keywords
+irrelevant_keywords = deodorant, recipe, weather, sports score, restaurant, fashion, makeup, beauty, movie review, book review, music review, celebrity gossip, dating, fitness, workout, diet, horoscope
+
+# Minimum article length (characters)
+min_article_length = 100
+
+# Maximum article length (characters, for API efficiency)
+max_article_length = 5000
+
+# ----------------------------------------------------------------------------
+# NEWS SOURCE PREFERENCES
+# Prioritize these domains in searches
+# ----------------------------------------------------------------------------
+
+[news_sources]
+
+# Tier 1: Premium financial sources (highest weight)
+tier1_domains = reuters.com, bloomberg.com, ft.com, wsj.com
+
+# Tier 2: Major financial media (high weight)
+tier2_domains = cnbc.com, marketwatch.com, seekingalpha.com, benzinga.com, barrons.com
+
+# Tier 3: General business news (medium weight)
+tier3_domains = businessinsider.com, forbes.com, fortune.com, techcrunch.com
+
+# Tier 4: Tech-focused (for tech stocks)
+tier4_domains = theverge.com, arstechnica.com, zdnet.com, tomshardware.com
+
+# Blocked domains (never use)
+blocked_domains = facebook.com, twitter.com, reddit.com, quora.com
+
+# ----------------------------------------------------------------------------
+# API CONFIGURATION
+# ----------------------------------------------------------------------------
+
+[api_settings]
+
+# NewsAPI settings
+newsapi_max_articles_per_search = 15
+newsapi_days_lookback = 7
+newsapi_fallback_days = 14
+
+# OpenAI settings
+openai_model = gpt-4o-mini
+openai_temperature = 0.2
+openai_max_tokens = 1000
+openai_timeout_seconds = 30
+
+# Rate limiting
+delay_between_articles_seconds = 2
+delay_between_tickers_seconds = 3
+max_retries = 3
+
+# ----------------------------------------------------------------------------
+# NARRATIVE CLASSIFICATION
+# Edit these to change how narratives are categorized
+# ----------------------------------------------------------------------------
+
+[narrative_types]
+
+EARNINGS_MISS = keywords: miss, below, disappoints, falls short, underperforms
+EARNINGS_BEAT = keywords: beats, exceeds, surpasses, tops, outperforms
+COMPETITIVE_THREAT = keywords: competition, rival, loses market share, threat, disruption
+REGULATORY_CONCERN = keywords: investigation, lawsuit, regulation, fine, scrutiny
+MANAGEMENT_CHANGE = keywords: CEO, resignation, departure, appointment, leadership
+PRODUCT_FAILURE = keywords: recall, defect, failure, problem, issue, bug
+PRODUCT_SUCCESS = keywords: launch, breakthrough, innovation, demand, sells out
+MARKET_CORRECTION = keywords: selloff, correction, decline, downturn, bearish
+GROWTH_CONCERN = keywords: slowing growth, guidance cut, outlook reduced, headwinds
+GROWTH_ACCELERATION = keywords: accelerating, expansion, growing, scaling, momentum
+VALUATION_CONCERN = keywords: overvalued, expensive, bubble, stretched, premium
+ACQUISITION = keywords: acquires, merger, buys, acquisition, deal
+
+# ----------------------------------------------------------------------------
+# SENTIMENT KEYWORDS FOR AI GUIDANCE
+# These help OpenAI identify sentiment in articles
+# ----------------------------------------------------------------------------
+
+[sentiment_keywords]
+
+# Very positive signals
+very_positive = blowout, spectacular, exceptional, record-breaking, unprecedented, soaring, skyrocketing, crushing it, dominating, revolutionary
+
+# Positive signals
+positive = strong, solid, impressive, beats, exceeds, growth, gains, positive, upbeat, optimistic, confident, bullish, upgrade, buy
+
+# Slightly positive signals
+slightly_positive = steady, stable, meets, maintains, resilient, holding up, inline, on track, progress
+
+# Neutral signals
+neutral = mixed, unchanged, flat, even, expected, forecast, predicted, estimated
+
+# Slightly negative signals
+slightly_negative = concerns, questions, uncertainty, cautious, watchful, slowing, softening, challenges
+
+# Negative signals
+negative = misses, disappoints, weak, poor, declining, falling, loses, drops, cuts, reduces, downgrade, sell, bearish
+
+# Very negative signals
+very_negative = disaster, collapse, plunge, crash, catastrophic, devastating, fraud, scandal, bankruptcy, crisis
+
+# ----------------------------------------------------------------------------
+# LOGGING AND OUTPUT
+# ----------------------------------------------------------------------------
+
+[logging]
+
+# Log level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+log_level = INFO
+
+# Log file location
+log_file = scraper.log
+
+# Log to console (true/false)
+log_to_console = true
+
+# Verbose sentiment reasoning (show AI's explanation)
+show_sentiment_reasoning = true
+
+# Show filtered articles (articles rejected for irrelevance)
+show_filtered_articles = false
+
+# ----------------------------------------------------------------------------
+# EXPERIMENTAL FEATURES
+# ----------------------------------------------------------------------------
+
+[experimental]
+
+# Use historical sentiment trends to adjust current scores
+use_sentiment_momentum = false
+
+# Penalize articles from sources with low historical accuracy
+penalize_unreliable_sources = false
+
+# Boost sentiment for articles with quantitative data
+boost_quantitative_articles = false
+
+# Factor in pre-publication volume spikes (Patent #1)
+detect_front_running = false
+
+# ----------------------------------------------------------------------------
+# NOTES FOR CUSTOMIZATION
+# ----------------------------------------------------------------------------
+
+# HOW TO EDIT THIS FILE:
+# 1. Change sentiment criteria to match your investment style
+# 2. Add more tickers and keywords for better coverage  
+# 3. Adjust relevance rules to filter more/less aggressively
+# 4. Modify news sources to prioritize your preferred outlets
+# 5. Tweak API settings for faster/slower processing
+
+# SENTIMENT SCORING TIPS:
+# - Conservative investors: Narrow the positive ranges, widen negative
+# - Aggressive investors: Widen positive ranges, narrow negative
+# - Day traders: Focus on +/-70 to 100 range (extreme moves)
+# - Long-term: Focus on +/-1 to 30 range (subtle trends)
+
+# AFTER EDITING:
+# Save this file and run the scraper - it will load these settings
+# automatically!
+
+# ============================================================================
+# END OF CONFIGURATION
+# ============================================================================
